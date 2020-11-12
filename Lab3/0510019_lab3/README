@@ -1,0 +1,5 @@
+# SA B star tree
+ PDA Lab3
+
+ ./lab3 [α value] [input.block name] [input.net name] [output name]
+For example, “./lab3 0.5 input.block input.nets output.rpt”.
