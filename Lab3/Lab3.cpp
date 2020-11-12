@@ -8,7 +8,7 @@ using namespace std;
 #define F first
 #define S second
 #define all(x) x.begin(), x.end()
-const int maxn = 1e2;
+const int maxn = 1e5;
 pair<int,int>pr[maxn];
 int x[maxn], rx[maxn], y[maxn], ry[maxn];
 int b[maxn], p[maxn];
@@ -42,6 +42,7 @@ void update(int x,int l,int r,int ql,int qr, int d) {
     pull(x,l,r);
 }
 void go() { 
+    //cout << "GOGO" << endl;
     vector<tuple<int,int,int,int>>e;
     f1(n) {
         int l, r, d, u;
@@ -59,18 +60,20 @@ void go() {
         if (pos != last) {
             ans += 1LL * sum[1] * (pos - last);
         }
-        update(1,1,100,l,r,d);
+        update(1,1,100000,l,r,d);
         last = pos;
     }
+    //cout << "GGGG" << endl;
     cout << ans << '\n';
 }
 void place(int now, int pre) {
+    //cout << "START" << endl;
     if (pre == 0) {
         x[now] = 0;
         rx[now] = pr[now].F;
         y[now] = 0;
         ry[now] = pr[now].S;
-        p[now] = b[now] = -1;
+        p[now] = b[now] = 0;
         return;
     }
     if (ls[pre] == now) {
@@ -108,7 +111,8 @@ void place(int now, int pre) {
     }
     int mx = 0;
     int i;
-    for (i = p[now] ; i ; i = p[i]) {
+    for (i = p[now] ; i > 0 ; i = p[i]) {
+        //cout << i << endl;
         mx = max(mx, ry[i]);
         if (rx[i] >= rx[now]) {
             if (rx[i] == rx[now]) {
@@ -129,10 +133,11 @@ void place(int now, int pre) {
     }
     y[now] = mx;
     ry[now] = y[now] + pr[now].S;
+    //cout << "END" << endl;
 }
 void dfs(int now, int pre) {
     if (!now) return;
-    cout << now <<' '<<pre << endl;
+    //cout << now <<' '<<pre << endl;
     place(now, pre);
     //cout << now <<' '<<x[now] <<' '<<y[now]<<' '<<rx[now] <<' '<<ry[now]<< endl;
     dfs(ls[now], now);
@@ -154,16 +159,16 @@ void init_tree() {
         }
     }
     cout << root << endl;
-    f1(n) {
+    /*f1(n) {
         cout << i <<' '<<ls[i]<<' '<<rs[i] << endl;
-    }
+    }*/
 }
 int main() {
     cin >> n;
     int sum = 0;
     f1(n) {
-        pr[i].F = rand() % 7;
-        pr[i].S = rand() % 7;
+        pr[i].F = rand() % 70 + 1;
+        pr[i].S = rand() % 70 + 1;
         //cin >> pr[i].F >> pr[i].S;
         sum += pr[i].F * pr[i].S;
     }
