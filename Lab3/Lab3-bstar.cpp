@@ -228,7 +228,6 @@ void upd() {
             mx = max(mx, rx[i]);
             my = max(my, ry[i]);
         }
-        //cout << "upd" << mx << ' ' << my << '\n';
     }
     else {
         root = broot;
@@ -268,22 +267,20 @@ void init_tree() {
     }
 }
 void remove(int x) {
-    int child    = 0;  // pull which child
-    int subchild = 0;   // child's subtree
+    int child    = 0;  
+    int subchild = 0;   
     int subparent= 0; 
     if(ls[x]||rs[x]){
-        bool left = rand()%2;           // choose a child to pull up
+        bool left = rand() % 2;
         if(ls[x] == 0) left = 0;
         if(rs[x] == 0) left = 1;
-  
-  
         if(left){
-            child = ls[x];          // child will never be NIL
+            child = ls[x];         
             if(rs[x] != 0){
                 subchild  = rs[child];
                 subparent = rs[x];
                 pa[rs[x]] = child; 
-                rs[child] = rs[x];    // abut with node's another child
+                rs[child] = rs[x];
             }
         }
         else{
@@ -295,22 +292,17 @@ void remove(int x) {
                 ls[child] = ls[x];
             }
         }
-        //add_changed_nodes(subchild);
         pa[child] = pa[x];
     }
   
-    if(pa[x] == 0){          // root
-        //    changed_root = nodes_root;
+    if(pa[x] == 0){
         root = child;
-    }else{                  // let parent connect to child
-        //add_changed_nodes(node.parent);
+    }else{
         if(x == ls[pa[x]])
             ls[pa[x]] = child;
         else
             rs[pa[x]] = child;
     }
-  
-    // place subtree
     if(subchild != 0){
         while(1){
             if(ls[subparent] == 0 || rs[subparent] == 0){
@@ -319,7 +311,7 @@ void remove(int x) {
                 else rs[subparent] = subchild;
                 break;
             } else{
-                subparent = (rand()%2 ? ls[subparent] : rs[subparent]);
+                subparent = (rand() % 2 ? ls[subparent] : rs[subparent]);
             }
         }
     }
@@ -393,32 +385,27 @@ void swap1(int n1,int n2) {
     else if ( root == n2 )
         root = n1;
     if (is_left) {
-        // change right
         if (rs[n1] != 0) 
             pa[rs[n1]] = n2;
         if (rs[n2] != 0) 
             pa[rs[n2]] = n1;
         swap(rs[n1], rs[n2]);
-        // change left
         if (ls[n2] != 0) 
             pa[ls[n2]] = n1;
         ls[n1] = ls[n2];
         ls[n2] = n1;
 
     } else {
-        // change left
         if (ls[n1] != 0) 
              pa[ls[n1]] = n2;
         if (ls[n2] != 0) 
              pa[ls[n2]] = n1;
         swap(ls[n1], ls[n2]);
-        // change right
         if (rs[n2] != 0) 
             pa[rs[n2]] = n1;
         rs[n1] = rs[n2];
         rs[n2] = n1;
     }
-    // change parent
     if (pa[n1] != 0) {
         int p = pa[n1];
         if(ls[p] == n1) 
@@ -463,7 +450,6 @@ int main(int argc,char **argv) {
             string s;
             fin2 >> s;
             net.back().pb(mp[s]);
-            //cout << "here"<<net.back().back() << endl;
         }
     }
     init_tree();
@@ -471,23 +457,16 @@ int main(int argc,char **argv) {
     f(iter) {
         int r = rand() % 100;
         if (r < 35) {
-            // rotate
-            //cout << "ROTATE" << endl;
             int idx = rand() % n + 1;
             swap(pr[idx].F, pr[idx].S);
             
         }
         if (r < 50) {
-            // swap
-            //continue;
-            //print();
-            
             int n1 = rand() % n + 1;
             int n2 = rand() % n + 1;
             while (n2 == n1) {
                 n2 = rand() % n + 1;
             }
-            //cout << "SWAP" << ' ' << n1 <<' '<<n2<<endl;
             if (pa[n1] == n2 || pa[n2] == n1) {
                 swap1(n1, n2);
             }
@@ -496,8 +475,6 @@ int main(int argc,char **argv) {
             }
         }
         else {
-            // move
-            //cout << "MOVE" << endl;
             int n1 = rand() % n + 1;
             int n2 = rand() % n + 1;
             while (n2 == n1) {
@@ -508,8 +485,6 @@ int main(int argc,char **argv) {
         }
         upd();
     }
-    //go();
-    //cout << tot_area << endl;
     int Final_cost = (double)best_area * alpha + (double)best_wire * (1.0 - alpha);
     cout << Final_cost << '\n';
     cout << best_wire << '\n';
@@ -523,5 +498,4 @@ int main(int argc,char **argv) {
     f1(n) {
         cout << block_name[i] << ' ' << bx[i] <<' '<< by[i] <<' '<< brx[i] <<' '<< bry[i] << endl;
     }
-    //cout << "FINISH\n";
 }
