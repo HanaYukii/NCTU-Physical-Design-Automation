@@ -15,14 +15,14 @@ vector<pair<int,int>>blocks;
 vector<int>pos;
 vector<int>neg;
 int n, m;
-int x[maxn], rx[maxn], y[maxn], ry[maxn];
-int ansx[maxn], ansrx[maxn], ansy[maxn], ansry[maxn]; 
-int Best_area, Best_wire, H, W, limx, limy;
+int x[maxn], rx[maxn], y[maxn], ry[maxn]; // bound during SA
+int ansx[maxn], ansrx[maxn], ansy[maxn], ansry[maxn]; // best answer
+int Best_area, Best_wire, H, W, limx, limy; // H : answer's height, W : answer width, limx : height constraint, limy : width constraint
 double Last_cost, Best_cost, alpha; 
-vector<vector<int>>net;
-map<string,int>mp;
+vector<vector<int>>net; // nets
+map<string,int>mp; // string to block or terminal
 string block_name[maxn];
-void cal() {
+void cal() { // find floorplan of given sequence
     int idx[n] = {};
     for (int i = 0 ; i < n ; i++) {
         idx[pos[i]] = i;
@@ -58,19 +58,19 @@ void cal() {
     }
     reverse(all(neg));
 }
-void random_solution() {
+void random_solution() { //generate random sequence
     Last_cost = 1e9;
     random_shuffle(all(pos));
     random_shuffle(all(neg));
 }
-int getarea(int &x,int &y) {
+int getarea(int &x,int &y) { // find height width of given floorplan
     f(n) {
         x = max(x, rx[i]);
         y = max(y, ry[i]);
     }
     return x * y;
 }
-int getwire() {
+int getwire() { // find wire length of given floorplan
     int ret = 0;
     for (auto &i : net) {
         int mix = INT_MAX, mxx = INT_MIN, miy = INT_MAX, mxy = INT_MIN;
@@ -86,9 +86,9 @@ int getwire() {
     }
     return ret;
 }
-void upd() {
+void upd() { // one iterate of SA
     int r = rand() % 100;
-    tuple<int,int,int>mov; 
+    tuple<int,int,int>mov; // store movement for roll back
     int rot = -1;
     if (r < 35) {
         int idx = rand() % n;
@@ -133,7 +133,7 @@ void upd() {
     if (Y > limy) {
         Ratio *= 1.10;
     }
-    if (X <= limx && Y <= limy) {
+    if (X <= limx && Y <= limy) { // fit height and width
         Ratio *= 0.8;
     }
     double Cost = ((double)Area * Ratio);
@@ -142,6 +142,7 @@ void upd() {
         Last_cost = Cost;
     }
     else {
+        // roll back
         if (get<2>(mov) == 3) {
             swap(pos[get<0>(mov)], pos[get<1>(mov)]);
             swap(neg[get<0>(mov)], neg[get<1>(mov)]);
@@ -170,7 +171,7 @@ void update_final() {
     int Area = getarea(X, Y);
     int Wire = getwire();
     double Cost = (double)Area * alpha + (double)Wire * (1.0 - alpha);
-    if (X <= limx && Y <= limy && Cost <= Best_cost) {
+    if (X <= limx && Y <= limy && Cost <= Best_cost) { // find a better solution during current iteration, update final answer
         H = X, W = Y;
         Best_wire = Wire;
         Best_area = Area;
@@ -189,7 +190,7 @@ int main(int argc,char **argv) {
     st = clock();
     srand(time(NULL));
     Best_area = 2e9;
-    fstream fin, fin2, fout;
+    fstream fin, fin2, fout; // fin: block terminal, fin2: nets
     string trash;
     fin.open(argv[2], ios::in);
     fin >> trash >> limx >> limy;
