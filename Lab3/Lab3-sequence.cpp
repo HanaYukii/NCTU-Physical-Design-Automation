@@ -194,7 +194,7 @@ void upd() {
 }
 void SA() {
     T = 4000000000;
-    int iter = 2000000;
+    int iter = 500000;
     while (iter--) {
         upd();
         T *= r;
@@ -227,7 +227,7 @@ int main() {
         cin >> x >> y;
         blocks.pb({x, y});
     }
-    int SA_time = 10;
+    int SA_time = 30;
     H = W = 1e9;
     while (SA_time--) {
         random_solution();

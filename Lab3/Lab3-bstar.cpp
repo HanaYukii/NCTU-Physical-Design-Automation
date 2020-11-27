@@ -8,7 +8,7 @@ using namespace std;
 #define F first
 #define S second
 #define all(x) x.begin(), x.end()
-const int maxn = 1e5;
+const int maxn = 205;
 pair<int,int>pr[maxn];
 int x[maxn], rx[maxn], y[maxn], ry[maxn];
 int b[maxn], p[maxn];
@@ -16,13 +16,15 @@ int n, m, netnum;
 int lz[maxn<<2];
 int sum[maxn<<2];
 int root;
-int iter = 100000;
 int ls[maxn], rs[maxn], pa[maxn];
 int best_area;
 double best_cost;
 int tot_area;
 int best_wire;
 double alpha;
+int Final_area, Final_wire;
+double Final_cost;
+int fx[maxn],frx[maxn],fy[maxn],fry[maxn];
 int bpa[maxn],bls[maxn],brs[maxn],bx[maxn],brx[maxn],by[maxn],bry[maxn],broot;
 pair<int,int>bpr[maxn];
 int limx, limy;
@@ -77,8 +79,6 @@ void go() {
         update(1,1,100000,l,r,d);
         last = pos;
     }
-    cout << "here"<<ans <<' '<<tot_area<<endl;
-    //assert(ans == tot_area);
 }
 void place(int now, int pre) {
     if (pre == 0) {
@@ -172,8 +172,8 @@ int getwire() {
     for (auto &i : net) {
         int mix = INT_MAX, mxx = INT_MIN, miy = INT_MAX, mxy = INT_MIN;
         for (auto &j : i) {
-            int xx = (x[j] + rx[j]) / 2;
-            int yy = (y[j] + ry[j]) / 2;
+            int xx = x[j] + (rx[j] - x[j]) / 2;
+            int yy = y[j] + (ry[j] - y[j]) / 2;
             mix = min(mix, xx);
             mxx = max(mxx, xx);
             miy = min(miy, yy);
@@ -183,11 +183,10 @@ int getwire() {
     }
     return ret;
 }
-void upd() {
-    memset(x, 0, sizeof(x));
-    memset(rx, 0, sizeof(rx));
-    memset(y, 0, sizeof(y));
-    memset(ry, 0, sizeof(ry));
+bool upd() {
+    for (int i = 1 ; i <= n ; i++) {
+        x[i] = rx[i] = y[i] = ry[i] = 0;
+    }
     dfs(root, 0);
     //go();
     int X = 0,Y = 0;
@@ -209,6 +208,7 @@ void upd() {
     }
     double Cost = ((double)Area * Ratio);
     bool force = (double)rand() / RAND_MAX < exp(-1 * (double)Cost / T);
+    T *= r;
     if (Cost <= best_cost || force) {
         best_area = Area;
         best_cost = Cost;
@@ -228,6 +228,7 @@ void upd() {
             mx = max(mx, rx[i]);
             my = max(my, ry[i]);
         }
+        return 1;
     }
     else {
         root = broot;
@@ -242,19 +243,25 @@ void upd() {
             pr[i].F = bpr[i].F;
             pr[i].S = bpr[i].S;
         }
+        return 0;
     }
-    T *= r;
+    
 }
 void print() {
     dfs2(root, 0);
 }
 void init_tree() {
+    T = 4000000000;
     vector<int>v;
     f1(n) {
         v.pb(i);
     }
     random_shuffle(all(v));
     root = v[0];
+    best_cost = best_area = best_wire = 1e9;
+    memset(ls, 0, sizeof(ls));
+    memset(rs, 0, sizeof(rs));
+    memset(pa, 0, sizeof(pa));
     for (int i = 1 ; i <= n / 2; i++) {
         if (i * 2 <= n) {
             ls[v[i - 1]] = v[i*2 - 1];
@@ -416,50 +423,15 @@ void swap1(int n1,int n2) {
     pa[n2] = pa[n1];
     pa[n1] = n2;
 }
-int main(int argc,char **argv) {
-    srand(time(NULL));
-    fstream fin,fin2;
-    fin.open("small.block", ios::in);
-    string trash;
-    fin >> trash >> limx >> limy;
-    fin >> trash >> n >> trash >> m;
-    for (int i = 1 ; i <= n ; i++) {
-        string s;
-        fin >> s >> pr[i].F >> pr[i].S;
-        block_name[i] = s;
-        mp[s] = i;
-        tot_area += pr[i].F * pr[i].S;
-    }
-    for (int i = n + 1 ; i <= n + m ; i++) {
-        string s;
-        fin >> s >> pr[i].F >> pr[i].S;
-        x[i] = rx[i] = pr[i].F;
-        y[i] = ry[i] = pr[i].S;
-        mp[s] = i;
-    }
-    best_area = INT_MAX;
-    fin2.open("small.nets", ios::in);
-    fin2 >> trash >> netnum;
-    alpha = 0.5;
-    f(netnum) {
-        fin2 >> trash;
-        int k;
-        fin2 >> k;
-        net.pb({});
-        while (k--) {
-            string s;
-            fin2 >> s;
-            net.back().pb(mp[s]);
-        }
-    }
-    init_tree();
+void SA() {
     upd();
-    f(iter) {
+    int iter = 100000;
+    int fail = 0;
+    while(iter--) {
         int r = rand() % 100;
-        if (r < 35) {
+        if (r < 30) {
             int idx = rand() % n + 1;
-            swap(pr[idx].F, pr[idx].S);
-            
+            swap(pr[idx].F, pr[idx].S);        
         }
         if (r < 50) {
             int n1 = rand() % n + 1;
@@ -483,19 +455,93 @@ int main(int argc,char **argv) {
             remove(n1);
             concat(n1, n2);
         }
-        upd();
+        if(upd()) {
+            fail++;
+        }
+        else {
+            fail = 0;
+        }
+        if (fail == 50) {
+            return;
+        }
     }
-    int Final_cost = (double)best_area * alpha + (double)best_wire * (1.0 - alpha);
-    cout << Final_cost << '\n';
-    cout << best_wire << '\n';
-    cout << best_area << '\n';
+}
+void update_final() {
+    int X = 0, Y = 0;
+    int best_area = getarea(X, Y);
+    int best_wire = getwire();
+    double Cost = (double)best_area * alpha + (double)best_wire * (1.0 - alpha);
+    if (X <= limx && Y <= limy && Cost < Final_cost) {
+        Final_cost = Cost;
+        Final_wire = best_wire;
+        Final_area = best_area;
+        for (int i = 1 ; i <= n ; i++) {
+            fx[i] = x[i];
+            fy[i] = y[i];
+            frx[i] = rx[i];
+            fry[i] = ry[i];
+        }
+    }
+}
+int main(int argc,char **argv) {
+    clock_t st,ed;
+    st = clock();
+    srand(time(NULL));
+    fstream fin, fin2, fout;
+    fin.open(argv[2], ios::in);
+    string trash;
+    fin >> trash >> limx >> limy;
+    fin >> trash >> n >> trash >> m;
+    for (int i = 1 ; i <= n ; i++) {
+        string s;
+        fin >> s >> pr[i].F >> pr[i].S;
+        //cout << s << endl;
+        block_name[i] = s;
+        mp[s] = i;
+        tot_area += pr[i].F * pr[i].S;
+    }
+    for (int i = n + 1 ; i <= n + m ; i++) {
+        string s;
+        fin >> s >> trash >> pr[i].F >> pr[i].S;
+        x[i] = rx[i] = pr[i].F;
+        y[i] = ry[i] = pr[i].S;
+        mp[s] = i;
+    }
+    best_area = INT_MAX;
+    fin2.open(argv[3], ios::in);
+    fin2 >> trash >> netnum;
+    alpha = stod(argv[1]);
+    f(netnum) {
+        fin2 >> trash;
+        int k;
+        fin2 >> k;
+        net.pb({});
+        while (k--) {
+            string s;
+            fin2 >> s;
+            net.back().pb(mp[s]);
+        }
+    }
+    Final_cost = 2e9;
+    int SA_time = 30;
+    while (SA_time--) {
+        init_tree();
+        SA();
+        update_final();
+    }
+    fout.open(argv[4], ios::out);
+    fout << fixed << setprecision(1) << Final_cost << '\n';
+    fout << Final_wire << '\n';
+    fout << Final_area << '\n';
     int Final_x = 0, Final_y = 0;
     f1(n) {
-        Final_x = max(Final_x, brx[i]);
-        Final_y = max(Final_y, bry[i]);
+        Final_x = max(Final_x, frx[i]);
+        Final_y = max(Final_y, fry[i]);
     }
-    cout << Final_x << ' ' << Final_y << '\n';
+    fout << Final_x << ' ' << Final_y << '\n';
+    ed = clock();
+    fout << (ed - st) / CLOCKS_PER_SEC << '\n';
     f1(n) {
-        cout << block_name[i] << ' ' << bx[i] <<' '<< by[i] <<' '<< brx[i] <<' '<< bry[i] << endl;
+        fout << block_name[i] << ' ' << fx[i] <<' '<< fy[i] <<' '<< frx[i] <<' '<< fry[i] << endl;
     }
 }

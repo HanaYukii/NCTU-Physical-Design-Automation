@@ -1,10 +1,11 @@
 Outline: 120 120
 NumBlocks: 4                                                                   
-NumTerminals: 0
+NumTerminals: 1
 
 A 40 50
 B 60 50
 C 60 50
 D 40 50
 
+P9 terminal          111    17 
  
