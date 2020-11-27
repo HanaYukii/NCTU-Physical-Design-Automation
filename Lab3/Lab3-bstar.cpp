@@ -13,8 +13,6 @@ pair<int,int>pr[maxn];
 int x[maxn], rx[maxn], y[maxn], ry[maxn];
 int b[maxn], p[maxn];
 int n, m, netnum;
-int lz[maxn<<2];
-int sum[maxn<<2];
 int root;
 int ls[maxn], rs[maxn], pa[maxn];
 int best_area;
@@ -33,53 +31,6 @@ vector<vector<int>>net;
 string block_name[maxn];
 double T = 4000000000;
 double r = 0.85;
-void pull(int x,int l,int r) {
-    if (lz[x]) {
-        sum[x] = r - l + 1;
-    }
-    else {
-        if (l == r) sum[x] = 0;
-        else sum[x] = sum[x<<1] + sum[x<<1|1];
-    }
-}
-void update(int x,int l,int r,int ql,int qr, int d) {
-    if (ql > qr)return;
-    if (ql <= l && qr >= r) {
-        lz[x] += d;
-        pull(x,l,r);
-        return;
-    }
-    int mid = (l + r) >> 1;
-    if (ql <= mid) {
-        update(x<<1,l,mid,ql,qr,d);
-    }
-    if (qr > mid) {
-        update(x<<1|1,mid+1,r,ql,qr,d);
-    }
-    pull(x,l,r);
-}
-void go() {
-    vector<tuple<int,int,int,int>>e;
-    f1(n) {
-        int l, r, d, u;
-        l = x[i], r = rx[i];
-        l++;
-        d = y[i], u = ry[i];
-        e.pb({d,l,r,1});
-        e.pb({u,l,r,-1});
-    }
-    int last = 0;
-    ll ans = 0;
-    sort(all(e));
-    for (auto &i : e) {
-        auto [pos, l, r, d] = i;
-        if (pos != last) {
-            ans += 1LL * sum[1] * (pos - last);
-        }
-        update(1,1,100000,l,r,d);
-        last = pos;
-    }
-}
 void place(int now, int pre) {
     if (pre == 0) {
         x[now] = 0;
