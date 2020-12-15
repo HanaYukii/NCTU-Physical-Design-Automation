@@ -253,7 +253,7 @@ void abacus(){
     for (auto &i : order) {
         cnt++;
         if (cnt % 1000 == 0) {
-            cout << cnt << endl;
+            //cout << cnt << endl;
         }
         double best = 1e18;
         int idx;
@@ -304,7 +304,7 @@ void abacus(){
 }
 void print() {
     f(100) {
-        cout << ansx[i] <<' '<<ansy[i] << endl;
+        //cout << ansx[i] <<' '<<ansy[i] << endl;
     }
 }
 int main(){
