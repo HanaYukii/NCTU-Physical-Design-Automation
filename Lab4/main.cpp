@@ -70,8 +70,8 @@ void preprocess() {
             }
             mp[get<0>(j)]++;
             mp[get<1>(j)]--;
-            if (i == 0)
-                cout << get<0>(j) <<' '<<get<1>(j)<<endl;
+            //if (i == 0)
+                //cout << get<0>(j) <<' '<<get<1>(j)<<endl;
         }
         int cur = 0;
         for (auto &j : mp) {
@@ -94,8 +94,8 @@ void preprocess() {
             v.pb({last, ori[i] + sites[i], low, {}});
         }
     }
-    cout << v.size() << endl;
-    TestCutRow();
+    //cout << v.size() << endl;
+    //TestCutRow();
 }
 void parse(string str) {
     ifstream fin(str);
