@@ -30,13 +30,28 @@ struct Cluster
 };
 int Node_cnt, Terminal_cnt, Row_cnt;
 vector<int>px, py;
-int ori, cor, del, sites;
+int cor, del;
 vector<int>pos;
 vector<int>ox, oy;
 vector<int>order;
 vector<Row>v;
 vector<int>ansx, ansy;
 vector<string>header;
+vector<int>ori, sites;
+void TestCutRow(){
+    fstream file;
+    file.open("test.gdt", ios::out);
+    file<<"gds2{600\nm=2018-09-14 14:26:15 a=2018-09-14 14:26:15\nlib 'asap7sc7p5t_24_SL' 1 1e-6\ncell{c=2018-09-14 14:26:15 m=2018-09-14 14:26:15 'AND2x2_ASAP7_75t_SL'\n";
+    //Terminal
+    for (int i = Node_cnt - Terminal_cnt; i < Node_cnt; i++){
+        file << "b{" << "0" << " xy(" << ox[i] << " " << oy[i] << " " << ox[i] << " " << oy[i] + py[i] << " " << ox[i] + px[i] << " " <<  oy[i] + py[i]<< " " << ox[i] + px[i]<< " " << oy[i] << ")}" << endl;
+    }
+    //Row
+    for (auto &i : v)
+        file << "b{" << "1" << " xy(" << i.left << " " << i.Y << " " << i.left << " " << i.Y + del << " " << i.right << " " << i.Y + del << " " << i.right << " " << i.Y << ")}" << endl;
+    //SubRow
+    file << "}\n}\n";
+}
 void preprocess() {
     vector<tuple<int,int,int,int>>ter;
     ofstream fo;
@@ -47,7 +62,7 @@ void preprocess() {
     for (int i = 0 ; i < Row_cnt ; i++) {
         int low = cor + i * del;
         int high = low + del;
-        int last = ori;
+        int last = ori[i];
         map<int,int>mp;
         for (auto &j : ter) {
             if (get<3>(j) <= low || get<2>(j) >= high) {
@@ -63,9 +78,9 @@ void preprocess() {
             if (cur == 0 && j.S > 0) {
                 if (j.F > last) {
                     v.pb({last, j.F, low, {}});
-                    if (j.F > ori + sites) {
-                        v.back().right = ori + sites;
-                        last = ori + sites;
+                    if (j.F > ori[i] + sites[i]) {
+                        v.back().right = ori[i] + sites[i];
+                        last = ori[i] + sites[i];
                         break;
                     }
                 }
@@ -75,16 +90,12 @@ void preprocess() {
             } 
             cur += j.S;
         }
-        if (last < ori + sites) {
-            v.pb({last, ori + sites, low, {}});
-        }
-    }
-    for (auto &i : v) {
-        if (i.left < ori) {
-            cout << i.left <<' '<<i.right << endl;
+        if (last < ori[i] + sites[i]) {
+            v.pb({last, ori[i] + sites[i], low, {}});
         }
     }
     cout << v.size() << endl;
+    TestCutRow();
 }
 void parse(string str) {
     ifstream fin(str);
@@ -127,22 +138,25 @@ void parse(string str) {
     }
     stringstream ss2(s);
     ss2 >> tr >> tr >> Row_cnt;
-    fin >> tr >> tr;
-    int x;
-    for (int j = 0 ; j < 8 ; j++) {
-        fin >> tr >> tr >> x;
-        if (j == 0) {
-            cor = x;
+    f(Row_cnt) {
+        fin >> tr >> tr;
+        int x;
+        for (int j = 0 ; j < 8 ; j++) {
+            fin >> tr >> tr >> x;
+            if (i == 0 && j == 0) {
+                cor = x;
+            }
+            else if (i == 0 && j == 1) {
+                del = x;
+            }
+            else if (j == 6) {
+                ori.pb(x);
+            }
+            else if (j == 7) {
+                sites.pb(x);
+            }
         }
-        if (j == 1) {
-            del = x;
-        }
-        else if (j == 6) {
-            ori = x;
-        }
-        else if (j == 7) {
-            sites = x;
-        }
+        fin >> tr;
     }
     pos.pb(cor);
     while ((int)pos.size() < Row_cnt) {
@@ -160,11 +174,11 @@ void parse(string str) {
         fin >> tr >> x >> y >> tr >> tr;
         ox.pb(x);
         oy.pb(y);
-        if (ox.back() < ori) {
-            ox.back() = ori;
+        if (ox.back() < ori.back()) {
+            ox.back() = ori.back();
         }
-        if (ox.back() + px[ox.size() - 1] > ori + sites) {
-            ox.back() = ori + sites - px[ox.size()-1];
+        if (ox.back() + px[ox.size() - 1] > ori.back() + sites.back()) {
+            ox.back() = ori.back() + sites.back() - px[ox.size()-1];
         }
     }
     f(Terminal_cnt) {
@@ -211,8 +225,7 @@ void collapse(vector<Cluster>&c,int idx) {
         }
     }
 }
-double placerow(int idx,int flag) {
-    //cout << px[v[idx].idx.back()] << ' '<<v[idx].totalWidth<<endl;
+double placerow(int idx,int flag, int xx,int yy) {
     if (v[idx].totalWidth + px[v[idx].idx.back()] > v[idx].right - v[idx].left) {
         return 1e18;
     }
@@ -249,7 +262,7 @@ double placerow(int idx,int flag) {
     }
     int X = c.back().optimal_x + c.back().totalWidth - px[v[idx].idx.back()];
     int Y = v[idx].Y;
-    return (X - ox[v[idx].idx.back()]) * (X - ox[v[idx].idx.back()]) + (Y - oy[v[idx].idx.back()]) * (Y - oy[v[idx].idx.back()]);
+    return (X - xx) * (X - xx) + (Y - yy) * (Y - yy);
 }
 void abacus(){
     ansx.resize(Node_cnt);
@@ -276,6 +289,9 @@ void abacus(){
         while (left >= 0 || right < (int)pos.size()) {
             int f = 0;
             if (left >= 0 && (oy[i] - v[left].Y) * (oy[i] - v[left].Y) < best) {
+                f = 1;
+                double dis = min(abs(ox[i] - v[left].left), abs(ox[i] - v[left].right));
+                if ((ox[i] <= v[left].right && ox[i] >= v[left].left) || dis * dis < best) {
                     int o = ox[i];
                     if (o < v[left].left) {
                         ox[i] = v[left].left;
@@ -284,17 +300,19 @@ void abacus(){
                         ox[i] = v[left].right - px[i];
                     }
                     v[left].idx.pb(i);
-                    double cost = placerow(left, 0);
+                    double cost = placerow(left, 0, o, oy[i]);
                     v[left].idx.pop_back();
                     if (cost < best) {
                         best = cost;
                         idx = left;
                     }
                     ox[i] = o;
-                    f = 1;
-                
+                }
             }
             if (right < (int)v.size() && (oy[i] - v[right].Y) * (oy[i] - v[right].Y) < best) {
+                f = 1;
+                double dis = min(abs(ox[i] - v[right].left), abs(ox[i] - v[right].right));
+                if ((ox[i] <= v[right].right && ox[i] >= v[right].left) || dis * dis < best) {
                     int o = ox[i];
                     if (o < v[right].left) {
                         ox[i] = v[right].left;
@@ -303,15 +321,14 @@ void abacus(){
                         ox[i] = v[right].right - px[i];
                     }
                     v[right].idx.pb(i);
-                    double cost = placerow(right, 0);
+                    double cost = placerow(right, 0, o, oy[i]);
                     v[right].idx.pop_back();
                     if (cost < best) {
                         best = cost;
                         idx = right;
                     }
                     ox[i] = o;
-                    f = 1;
-                
+                }      
             }
             if (!f) {
                 break;
@@ -325,15 +342,15 @@ void abacus(){
             ox[i] = v[idx].right - px[i];
         }
         v[idx].idx.pb(i);
-        placerow(idx, 1);
+        placerow(idx, 1, 0, 0);
         v[idx].totalWidth += px[i];
     }
 }
 void print() {
     ofstream fo;
-    fo.open("output.txt", ios::out);
+    fo.open("output.pl", ios::out);
     for (auto &i : header) {
-        fo << i;
+        fo << i << '\n';
     }
     f(Node_cnt) {
         if (i < Node_cnt - Terminal_cnt)
@@ -343,10 +360,9 @@ void print() {
     }
     fo.close();
 }
-int main(){
-    string aux = "adaptec1.aux";
+int main(int argc, char** argv){
+    string aux = argv[1];
     parse(aux);
     abacus();
     print();
-    cout << "OK" << endl;
 }
