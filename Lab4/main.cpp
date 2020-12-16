@@ -14,6 +14,7 @@ struct Row
 {
     int left, right;
     int Y;
+    int totalWidth;
     vector<int>idx;
     bool operator < (const Row &x) const{
         if (Y != x.Y) {
@@ -35,17 +36,13 @@ vector<int>ox, oy;
 vector<int>order;
 vector<Row>v;
 vector<int>ansx, ansy;
+vector<string>header;
 void preprocess() {
-    cout << "NOK" << endl;
     vector<tuple<int,int,int,int>>ter;
     ofstream fo;
-    fo.open("boundary.txt", ios::out);
     for (int i = Node_cnt - Terminal_cnt ; i < Node_cnt ; i++) {
         ter.pb({ox[i],ox[i] + px[i], oy[i], oy[i] + py[i]});
-        fo << "b{1 xy(";
-        fo << ox[i] <<' '<<oy[i]+py[i] << ' '<< ox[i] <<' '<<oy[i] <<' ' <<ox[i]+px[i]<<' '<<oy[i]<<' '<<ox[i]+px[i] <<' '<<oy[i]+py[i] <<")}\n";
     }
-    fo.close();
     sort(all(ter));
     for (int i = 0 ; i < Row_cnt ; i++) {
         int low = cor + i * del;
@@ -64,15 +61,27 @@ void preprocess() {
         int cur = 0;
         for (auto &j : mp) {
             if (cur == 0 && j.S > 0) {
-                v.pb({last, j.F, low, {}});
+                if (j.F > last) {
+                    v.pb({last, j.F, low, {}});
+                    if (j.F > ori + sites) {
+                        v.back().right = ori + sites;
+                        last = ori + sites;
+                        break;
+                    }
+                }
             }
             else if (cur > 0 && j.S == -cur) {
-                last = j.F;
+                last = max(last, j.F);
             } 
             cur += j.S;
         }
         if (last < ori + sites) {
             v.pb({last, ori + sites, low, {}});
+        }
+    }
+    for (auto &i : v) {
+        if (i.left < ori) {
+            cout << i.left <<' '<<i.right << endl;
         }
     }
     cout << v.size() << endl;
@@ -128,10 +137,10 @@ void parse(string str) {
         if (j == 1) {
             del = x;
         }
-        else if (j == 7) {
+        else if (j == 6) {
             ori = x;
         }
-        else if (j == 8) {
+        else if (j == 7) {
             sites = x;
         }
     }
@@ -143,12 +152,20 @@ void parse(string str) {
     fin.open(pl);
     f(3) {
         getline(fin, tr);
+        header.pb(tr);
     }
+    header.pb("\n");
     f(Node_cnt - Terminal_cnt) {
         int x, y;
         fin >> tr >> x >> y >> tr >> tr;
         ox.pb(x);
         oy.pb(y);
+        if (ox.back() < ori) {
+            ox.back() = ori;
+        }
+        if (ox.back() + px[ox.size() - 1] > ori + sites) {
+            ox.back() = ori + sites - px[ox.size()-1];
+        }
     }
     f(Terminal_cnt) {
         int x, y;
@@ -177,8 +194,8 @@ void collapse(vector<Cluster>&c,int idx) {
         if (c.back().optimal_x < v[idx].left) {
             c.back().optimal_x = v[idx].left;
         }
-        if (c.back().optimal_x + c.back().totalWeight > v[idx].right) {
-            c.back().optimal_x = v[idx].right - c.back().totalWeight;
+        if (c.back().optimal_x + c.back().totalWidth > v[idx].right) {
+            c.back().optimal_x = v[idx].right - c.back().totalWidth;
         }
         if (c.size() == 1) {
             break;
@@ -195,29 +212,23 @@ void collapse(vector<Cluster>&c,int idx) {
     }
 }
 double placerow(int idx,int flag) {
+    //cout << px[v[idx].idx.back()] << ' '<<v[idx].totalWidth<<endl;
+    if (v[idx].totalWidth + px[v[idx].idx.back()] > v[idx].right - v[idx].left) {
+        return 1e18;
+    }
     vector<Cluster>c;
     for (auto &i : v[idx].idx) {
-        if (!c.size() || c.back().optimal_x + c.back().totalWidth <= ox[i]) {
+        if (!c.size() || c.back().optimal_x + c.back().totalWidth < ox[i]) {
             c.pb(Cluster());
-            c.back().optimal_x = ox[i];
-            if (c.back().optimal_x < v[idx].left) {
-                c.back().optimal_x = v[idx].left;
-            }
-            if (c.back().optimal_x + c.back().totalWeight > v[idx].right) {
-                c.back().optimal_x = v[idx].right - c.back().totalWeight;
-            }
-            c.back().firstCell = i;
             add(c.back(), i);
+            c.back().optimal_x = ox[i];
+            c.back().firstCell = i;
         }
         else {
             add(c.back(), i);
             collapse(c, idx);
         }
-        if (c.back().totalWidth  > v[idx].right - v[idx].left) {
-            return 1e18;
-        }
     }
-    //cout << "NANI" << endl;
     if (flag) {
         int ptr = 0;
         for (auto &i : c) {
@@ -238,7 +249,6 @@ double placerow(int idx,int flag) {
     }
     int X = c.back().optimal_x + c.back().totalWidth - px[v[idx].idx.back()];
     int Y = v[idx].Y;
-    //cout << "GG" << endl;
     return (X - ox[v[idx].idx.back()]) * (X - ox[v[idx].idx.back()]) + (Y - oy[v[idx].idx.back()]) * (Y - oy[v[idx].idx.back()]);
 }
 void abacus(){
@@ -249,12 +259,7 @@ void abacus(){
     sort(all(order),[&](int a,int b){
         return ox[a] < ox[b];
     });
-    int cnt = 0;
     for (auto &i : order) {
-        cnt++;
-        if (cnt % 1000 == 0) {
-            //cout << cnt << endl;
-        }
         double best = 1e18;
         int idx;
         int right = v.size();
@@ -271,41 +276,72 @@ void abacus(){
         while (left >= 0 || right < (int)pos.size()) {
             int f = 0;
             if (left >= 0 && (oy[i] - v[left].Y) * (oy[i] - v[left].Y) < best) {
-                v[left].idx.pb(i);
-                double cost = placerow(left, 0);
-                v[left].idx.pop_back();
-                if (cost < best) {
-                    best = cost;
-                    idx = left;
-                }
-                f = 1;
+                    int o = ox[i];
+                    if (o < v[left].left) {
+                        ox[i] = v[left].left;
+                    }
+                    if (ox[i] + px[i] > v[left].right) {
+                        ox[i] = v[left].right - px[i];
+                    }
+                    v[left].idx.pb(i);
+                    double cost = placerow(left, 0);
+                    v[left].idx.pop_back();
+                    if (cost < best) {
+                        best = cost;
+                        idx = left;
+                    }
+                    ox[i] = o;
+                    f = 1;
+                
             }
             if (right < (int)v.size() && (oy[i] - v[right].Y) * (oy[i] - v[right].Y) < best) {
-                v[right].idx.pb(i);
-                double cost = placerow(right, 0);
-                v[right].idx.pop_back();
-                if (cost < best) {
-                    best = cost;
-                    idx = right;
-                }
-                f = 1;
+                    int o = ox[i];
+                    if (o < v[right].left) {
+                        ox[i] = v[right].left;
+                    }
+                    if (ox[i] + px[i] > v[right].right) {
+                        ox[i] = v[right].right - px[i];
+                    }
+                    v[right].idx.pb(i);
+                    double cost = placerow(right, 0);
+                    v[right].idx.pop_back();
+                    if (cost < best) {
+                        best = cost;
+                        idx = right;
+                    }
+                    ox[i] = o;
+                    f = 1;
+                
             }
             if (!f) {
                 break;
             }
-            //cout << best << ' '<<left <<' '<<right << endl;
             left--, right++;
         }
+        if (ox[i] < v[idx].left) {
+            ox[i] = v[idx].left;
+        }
+        if (ox[i] + px[i] > v[idx].right) {
+            ox[i] = v[idx].right - px[i];
+        }
         v[idx].idx.pb(i);
-        //cout << "gg" << endl;
         placerow(idx, 1);
-        //cout << "gg" << endl;
+        v[idx].totalWidth += px[i];
     }
 }
 void print() {
-    f(100) {
-        //cout << ansx[i] <<' '<<ansy[i] << endl;
+    ofstream fo;
+    fo.open("output.txt", ios::out);
+    for (auto &i : header) {
+        fo << i;
     }
+    f(Node_cnt) {
+        if (i < Node_cnt - Terminal_cnt)
+            fo << "o" << i <<' '<<ansx[i] <<' '<<ansy[i] << " : N\n";
+        else
+            fo << "o" << i <<' '<<ox[i] <<' '<<oy[i] << " : N /FIXED\n";
+    }
+    fo.close();
 }
 int main(){
     string aux = "adaptec1.aux";
